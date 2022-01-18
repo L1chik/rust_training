@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Local};
 use dashmap::mapref::entry::Entry;
 use dashmap::DashMap;
 use std::fmt;
@@ -32,7 +32,7 @@ impl Chat {
         }
     }
 
-    pub fn append(&self, room_id: &str, msg: String) -> Option<DateTime<Utc>> {
+    pub fn append(&self, room_id: &str, msg: String) -> Option<DateTime<Local>> {
         let mut room = self.rooms.get_mut(room_id)?;
 
         room.append(msg)
@@ -55,19 +55,19 @@ impl Room {
         new
     }
 
-    pub fn messages(&self) -> impl Iterator<Item = &Message> {
+    pub fn messages(&self) -> impl Iterator<Item=&Message> {
         self.msgs.iter()
     }
 
-    pub fn append(&mut self, msg: String) -> Option<DateTime<Utc>> {
-        let dt = Utc::now();
+    pub fn append(&mut self, msg: String) -> Option<DateTime<Local>> {
+        let dt = Local::now();
         self.msgs.push(Message(dt, msg));
 
         Some(dt)
     }
 }
 
-pub struct Message(DateTime<Utc>, String);
+pub struct Message(DateTime<Local>, String);
 
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

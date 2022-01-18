@@ -2,7 +2,7 @@
 
 members = [
     "stp",
-#    "chat_client",
+    "chat_client",
     "chat_server",
-#    "chat_tui",
+    "chat_tui",
 ]
