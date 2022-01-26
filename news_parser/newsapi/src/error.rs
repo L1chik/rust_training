@@ -11,5 +11,8 @@ pub enum NewsApiError {
     #[error("Url parsing failed")]
     UrlParseFailed(#[from] url::ParseError),
     #[error("Request failed: {0}")]
-    BadRequest(&'static str)
+    BadRequest(&'static str),
+    #[error("Async request failed")]
+    #[cfg(feature = "async")]
+    AsyncRequestFailed(#[from] reqwest::Error),
 }

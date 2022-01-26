@@ -1,4 +1,5 @@
-use std::error::Error;
+#[cfg(feature = "async")]
+use reqwest::Method;
 use serde::Deserialize;
 use crate::error::NewsApiError;
 use NewsApiError::{RequestFailed, ConvertingFailed, ParseFailed};
@@ -26,6 +27,7 @@ impl NewsAPIResponse {
 //     pub articles: Vec<Article>,
 // }
 //
+
 #[derive(Deserialize, Debug)]
 pub struct Article {
     title: String,
@@ -110,7 +112,7 @@ impl NewsAPI {
             api_key: api_key.to_string(),
             endpoint: Endpoint::TopHeadlines,
             country: Country::Ru,
-            category: Category::Technology,
+            category: Category::Science,
         }
     }
 
@@ -138,12 +140,19 @@ impl NewsAPI {
             .unwrap()
             .push(&self.endpoint.to_string());
 
+        // let country = self.country.to_string();
         let country = format!("country={}", self.country.to_string());
         url.set_query(Some(&country));
 
-        let category = format!("category={}", self.category.to_string());
-        url.set_query(Some(&category));
 
+        // let category = format!("category={}", self.category.to_string());
+        // url.set_query(Some(&category));
+
+        // url.query_pairs_mut()
+        //     .append_pair("country", &self.country.to_string())
+        //     .append_pair("category", & self.category.to_string());
+
+        // println!("{}", url);
         Ok(url.to_string())
     }
 
@@ -157,6 +166,27 @@ impl NewsAPI {
             _ => Err(map_response_err(response.code))
         }
 
+    }
+
+    #[cfg(feature = "async")]
+    pub async fn async_fetch(&self) -> Result<NewsAPIResponse, NewsApiError> {
+        let url = self.prepare_url()?;
+        let client = reqwest::Client::new();
+        let request = client
+            .request(Method::GET, url)
+            .header("Authorization", &self.api_key)
+            .build()
+            .map_err(|e|  NewsApiError::AsyncRequestFailed(e))?;
+
+        let response: NewsAPIResponse = client
+            .execute(request).await?
+            .json().await
+            .map_err(|e| NewsApiError::AsyncRequestFailed(e))?;
+
+        return match response.status.as_str() {
+            "ok" => Ok(response),
+            _ => Err(map_response_err(response.code)),
+        }
     }
 }
 

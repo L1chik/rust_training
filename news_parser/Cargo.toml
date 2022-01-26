@@ -9,9 +9,10 @@ license = "MIT"
 authors = ["L1chik"]
 
 [dependencies]
-newsapi = { path = "./newsapi" }
+newsapi = { path = "./newsapi", features = ["async"] }
 colour = "0.6.0"
 termimad = "0.20.0"
 crossterm = "0.22.1"
 cargo-deb = "1.35.0"
 dotenv = "0.15.0"
+tokio = { vesrion = "1.15.0", features = ["full"] }
