@@ -1,21 +1,52 @@
-use iced::{executor, Application, Settings, Text, Command, Clipboard, Subscription, Element, Color};
-use iced::window::Mode;
-use opencv::{
-    Result,
-    prelude::*,
-    videoio,
-    highgui
-};
+use iced::{
+    executor, Application, Settings, Text, Command, Clipboard, Subscription, Element, Color,
+    Container, Length, Column, Align, Row, Scrollable, Rule, scrollable, Space, window,
 
-struct Headlines;
+};
+use iced::futures::io::Window;
+
+#[derive(Debug, Default)]
+struct Headlines {
+    articles: Vec<NewsData>,
+    scroll: scrollable::State,
+}
+
+#[derive(Debug, Default, Clone)]
+struct NewsData {
+    title: String,
+    hashtag: String,
+    url: String
+}
+
+impl Headlines {
+    fn new() -> Headlines {
+        let iter = (0..20).map(|a| NewsData {
+            title: format!("title{}", a),
+            hashtag: format!("hashtag{}", a),
+            url: format!("url{}", a),
+        });
+
+        Headlines {
+            articles: Vec::from_iter(iter),
+            scroll: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    ScrollToTop(usize),
+    ScrollToBottom(usize),
+    Scrolled(usize, f32),
+}
 
 impl Application for Headlines {
     type Executor = executor::Default;
-    type Message = ();
+    type Message = Message;
     type Flags = ();
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Headlines, Command::none())
+        (Headlines::new(), Command::none())
     }
 
     fn title(&self) -> String {
@@ -27,18 +58,48 @@ impl Application for Headlines {
     }
 
     fn view(&mut self) -> Element<'_, Self::Message> {
-        Text::new("Test").into()
+        let Headlines {
+            articles,
+            ..
+        } = self;
+
+        let headlinses = Column::with_children(
+            articles
+                .iter_mut()
+                .map(|article| {
+                    Column::new()
+                        .push(Text::new(&article.title))
+                        .push(Text::new(&article.hashtag))
+                        .push(Text::new(&article.url))
+                        .into()
+                }).collect()
+        );
+
+        let mut content = Scrollable::new(&mut self.scroll)
+            .width(Length::Fill)
+            .align_items(Align::Start)
+            .spacing(10)
+            .push(headlinses);
+
+
+        Container::new(content)
+            .width(Length::Units(540))
+            .height(Length::Units(960))
+            .into()
     }
-    
 }
 
 
 
-fn main() -> Result<()> {
-    // Headlines::run(Settings::default())
-    let cam = videoio::VideoCapture::new(
-        0, videio::CAP_ANY)?;
-    highgui::named_window("test", highgui::WINDOW_FULLSCREEN);
-
-    Ok(())
+fn main() -> iced::Result {
+    let settings = Settings {
+        window: window::Settings {
+            size: (540, 960),
+            resizable: false,
+            decorations: true,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    Headlines::run(settings)
 }
