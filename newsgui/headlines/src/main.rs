@@ -1,26 +1,17 @@
 mod style;
 
-use iced::{
-    executor, Application, Settings, Text, Command, Clipboard, Subscription, Element, Color,
-    Container, Length, Column, Align, Scrollable, Rule, scrollable, Space, window, HorizontalAlignment,
-    VerticalAlignment, Background, container
-};
-use iced::container::Style;
-use iced::futures::io::Window;
-use crate::style::Theme::Dark;
+use iced::{executor, Application, Settings, Text, Command, Clipboard, Subscription, Element, Color, Container, Length, Column, Align, Scrollable, scrollable, Space, window, HorizontalAlignment, VerticalAlignment, Rectangle, Point, Size, Button, Rule, button, Row};
 
-const PADDING: u16 = 5;
-const WHITE: Color = Color::WHITE;
-const CYAN: Color = Color::from_rgb(15.0 / 255.0,
-                                    230.0 / 255.0,
-                                    60.0 / 255.0);
-const BACKGROUND: Color = Color::from_rgb(11.0, 14.0, 16.0);
+
+
+use crate::style::{GREEN, WHITE, PADDING, TITLE, DESCRIPTION, URL, GRAY, Theme::Dark};
 
 
 #[derive(Debug, Default)]
 struct Headlines {
     articles: Vec<NewsData>,
     scroll: scrollable::State,
+    refresh: button::State,
     theme: style::Theme,
 }
 
@@ -34,24 +25,23 @@ struct NewsData {
 impl Headlines {
     fn new() -> Headlines {
         let iter = (0..20).map(|a| NewsData {
-            title: format!("title{}", a),
-            hashtag: format!("hashtag{}", a),
-            url: format!("url{}", a),
+            title: format!("Title{}", a),
+            hashtag: format!("Hashtag{}", a),
+            url: format!("Read more ↳{}", a),
         });
 
         Headlines {
             articles: Vec::from_iter(iter),
             scroll: Default::default(),
             theme: Dark,
+            refresh: Default::default(),
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum Message {
-    ScrollToTop(usize),
-    ScrollToBottom(usize),
-    Scrolled(usize, f32),
+    Refresh,
 }
 
 impl Application for Headlines {
@@ -74,10 +64,38 @@ impl Application for Headlines {
     fn view(&mut self) -> Element<'_, Self::Message> {
         let Headlines {
             articles,
+            refresh,
             ..
         } = self;
 
-        let headlinses = Column::with_children(
+        let header = Column::new()
+            .width(Length::Units(540))
+            .spacing(10)
+            .push(Row::new()
+                .width(Length::Units(540))
+                .push(
+                Text::new("Headlines")
+                    .width(Length::Fill)
+                    .height(Length::Units(35))
+                    .color(GRAY)
+                    .font(DESCRIPTION)
+                    .size(30)
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .vertical_alignment(VerticalAlignment::Center))
+                .push(
+                    Button::new(&mut self.refresh, Text::new("↻")
+                        .vertical_alignment(VerticalAlignment::Bottom)
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(25))
+                        .padding(5)
+                        .style(style::Button::Primary)
+                        .on_press(Message::Refresh)
+            ))
+
+            .push(Rule::horizontal(1).style(self.theme)
+            );
+
+        let headlines = Column::with_children(
             articles
                 .iter_mut()
                 .map(|article| {
@@ -88,31 +106,47 @@ impl Application for Headlines {
                         // Title
                         .push(
                             Text::new(format!("→ {}", &article.title))
-                                .color(WHITE)
-                                .size(25))
-                        .padding(PADDING)
+                                .color(GREEN)
+                                .size(22)
+                                .font(TITLE))
 
                         // HashTags
                         .push(
                             Text::new(&article.hashtag)
-                        )
+                                .font(DESCRIPTION))
 
                         // URL
                         .push(
                             Text::new(&article.url)
-                                .color(CYAN)
+                                .color(GREEN)
                                 .width(Length::Fill)
                                 .horizontal_alignment(HorizontalAlignment::Right)
-                                )
+                                .size(16)
+                                .font(URL))
+                        .push(Space::with_height(Length::Units(20)))
+                        .push(Rule::horizontal(1).style(self.theme))
+                        .push(Space::with_height(Length::Units(20)))
                         .into()
+
+                    // Container::new(col)
+                    //     .style(self.theme)
+                    //     .into()
                 }).collect()
         );
 
-        let mut content = Scrollable::new(&mut self.scroll)
+        let scrollable = Scrollable::new(&mut self.scroll)
             .width(Length::Fill)
-            // .align_items(Align::Start)
             .spacing(10)
-            .push(headlinses);
+            .padding(PADDING)
+            .push(headlines);
+
+        let content = Column::new()
+            .width(Length::Fill)
+            .spacing(10)
+            .padding(PADDING)
+            .push(header)
+            .push(scrollable);
+
 
         Container::new(content)
             .max_width(540)
