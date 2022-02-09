@@ -32,6 +32,7 @@ impl NewsAPIResponse {
 pub struct Article {
     title: String,
     url: String,
+    hashtag: String,
 }
 
 impl Article {
@@ -42,6 +43,8 @@ impl Article {
     pub fn get_url(&self) -> &str {
         &self.url
     }
+
+    pub fn get_hashtag(&self) -> &str { &self.hashtag }
 }
 //
 // pub fn get_articles(url: &str) -> Result<Articles, NewsApiError> {

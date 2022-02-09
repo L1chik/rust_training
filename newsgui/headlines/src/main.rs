@@ -1,11 +1,13 @@
 mod style;
 
-use iced::{executor, Application, Settings, Text, Command, Clipboard, Subscription, Element, Color, Container, Length, Column, Align, Scrollable, scrollable, Space, window, HorizontalAlignment, VerticalAlignment, Rectangle, Point, Size, Button, Rule, button, Row};
-
-
-
+use serde::{Serialize, Deserialize};
+use iced::{executor, Application, Settings, Text, Command, Clipboard, Subscription,
+           Element, Color, Container, Length, Column, Align, Scrollable, scrollable, Space,
+           window, HorizontalAlignment, VerticalAlignment, Rectangle, Point, Size, Button,
+           Rule, button, Row};
 use crate::style::{GREEN, WHITE, PADDING, TITLE, DESCRIPTION, URL, GRAY, Theme::Dark};
 
+use newsapi::{NewsAPI, NewsAPIResponse};
 
 #[derive(Debug, Default)]
 struct Headlines {
@@ -29,6 +31,7 @@ impl Headlines {
             hashtag: format!("Hashtag{}", a),
             url: format!("Read more ↳{}", a),
         });
+
 
         Headlines {
             articles: Vec::from_iter(iter),
@@ -156,7 +159,21 @@ impl Application for Headlines {
     }
 }
 
+fn fetch_news(api_key: &str, articles: &mut Vec<NewsData>) {
+    if let Ok(response) = NewsAPI::new(api_key).fetch() {
+        let response_articles = response.articles();
 
+        for article in response_articles.iter() {
+            let news = NewsData {
+                title: article.get_title().to_string(),
+                url: article.get_url().to_string(),
+                hashtag: article.get_hashtag().map(|s| s.to_string()).unwrap_or("...".to_string())
+            };
+
+            articles.push(news)
+        }
+    }
+}
 
 fn main() -> iced::Result {
     let settings = Settings {
@@ -171,19 +188,5 @@ fn main() -> iced::Result {
     Headlines::background_color(&Headlines::new());
     Headlines::run(settings)
 }
-
-// impl container::StyleSheet for Container<'_, Message> {
-//     fn style(&self) -> container::Style {
-//         container::Style {
-//             background: Color {
-//                 a: 0.99,
-//                 ..BACKGROUND
-//             }
-//                 .into(),
-//             text_color: Color::WHITE.into(),
-//             ..container::Style::default()
-//         }
-//     }
-// }
 
 
