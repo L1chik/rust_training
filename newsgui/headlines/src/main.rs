@@ -1,4 +1,5 @@
 mod style;
+mod headlines;
 
 use serde::{Serialize, Deserialize};
 use iced::{executor, Application, Settings, Text, Command, Clipboard, Subscription,
@@ -9,35 +10,44 @@ use crate::style::{GREEN, WHITE, PADDING, TITLE, DESCRIPTION, URL, GRAY, Theme::
 
 use newsapi::{NewsAPI, NewsAPIResponse};
 
+pub const KEY: &str = "9ecdffd98f02404eaaf09707c9ac1662";
+
 #[derive(Debug, Default)]
 struct Headlines {
     articles: Vec<NewsData>,
     scroll: scrollable::State,
     refresh: button::State,
     theme: style::Theme,
+    config: HeadlinesConfig,
+}
+
+#[derive(Debug)]
+struct HeadlinesConfig {
+    api_key: String,
+}
+
+impl Default for HeadlinesConfig {
+    fn default() -> Self {
+        Self {
+            api_key: String::new()
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone)]
 struct NewsData {
     title: String,
-    hashtag: String,
     url: String
 }
 
 impl Headlines {
     fn new() -> Headlines {
-        let iter = (0..20).map(|a| NewsData {
-            title: format!("Title{}", a),
-            hashtag: format!("Hashtag{}", a),
-            url: format!("Read more ↳{}", a),
-        });
-
-
         Headlines {
-            articles: Vec::from_iter(iter),
+            articles: vec![],
             scroll: Default::default(),
             theme: Dark,
             refresh: Default::default(),
+            config: HeadlinesConfig { api_key: String::from(KEY) },
         }
     }
 }
@@ -53,7 +63,10 @@ impl Application for Headlines {
     type Flags = ();
 
     fn new(flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (Headlines::new(), Command::none())
+        let mut head = Headlines::new();
+        fetch_news(KEY, &mut head.articles);
+
+        (head, Command::none())
     }
 
     fn title(&self) -> String {
@@ -114,9 +127,9 @@ impl Application for Headlines {
                                 .font(TITLE))
 
                         // HashTags
-                        .push(
-                            Text::new(&article.hashtag)
-                                .font(DESCRIPTION))
+                        // .push(
+                            // Text::new(&article.hashtag)
+                            //     .font(DESCRIPTION))
 
                         // URL
                         .push(
@@ -160,6 +173,7 @@ impl Application for Headlines {
 }
 
 fn fetch_news(api_key: &str, articles: &mut Vec<NewsData>) {
+
     if let Ok(response) = NewsAPI::new(api_key).fetch() {
         let response_articles = response.articles();
 
@@ -167,10 +181,9 @@ fn fetch_news(api_key: &str, articles: &mut Vec<NewsData>) {
             let news = NewsData {
                 title: article.get_title().to_string(),
                 url: article.get_url().to_string(),
-                hashtag: article.get_hashtag().map(|s| s.to_string()).unwrap_or("...".to_string())
             };
 
-            articles.push(news)
+            articles.push(news);
         }
     }
 }
@@ -185,6 +198,7 @@ fn main() -> iced::Result {
         },
         ..Default::default()
     };
+
     Headlines::background_color(&Headlines::new());
     Headlines::run(settings)
 }
